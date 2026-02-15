@@ -28,30 +28,30 @@ services:
       SPRING_DATASOURCE_USERNAME: stats
       SPRING_DATASOURCE_PASSWORD: stats
 
-  ewm-db:
-    image: postgres:16.1-alpine
-    container_name: ewm-db
-    ports:
-      - "5433:5432"
-    environment:
-      POSTGRES_DB: ewm
-      POSTGRES_USER: ewm
-      POSTGRES_PASSWORD: ewm
-    healthcheck:
-      test: pg_isready -q -d ewm -U ewm
-      timeout: 5s
-      interval: 5s
-      retries: 10
+  # ewm-db:
+  #   image: postgres:16.1-alpine
+  #   container_name: ewm-db
+  #   ports:
+  #     - "5433:5432"
+  #   environment:
+  #     POSTGRES_DB: ewm
+  #     POSTGRES_USER: ewm
+  #     POSTGRES_PASSWORD: ewm
+  #   healthcheck:
+  #     test: pg_isready -q -d ewm -U ewm
+  #     timeout: 5s
+  #     interval: 5s
+  #     retries: 10
 
-  ewm-service:
-    build: main-service   # временная заглушка, потом замените на реальный путь
-    container_name: ewm-service
-    ports:
-      - "8080:8080"
-    depends_on:
-      ewm-db:
-        condition: service_healthy
-    environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://ewm-db:5432/ewm
-      SPRING_DATASOURCE_USERNAME: ewm
-      SPRING_DATASOURCE_PASSWORD: ewm
+  # ewm-service:
+  #   build: main-service
+  #   container_name: ewm-service
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     ewm-db:
+  #       condition: service_healthy
+  #   environment:
+  #     SPRING_DATASOURCE_URL: jdbc:postgresql://ewm-db:5432/ewm
+  #     SPRING_DATASOURCE_USERNAME: ewm
+  #     SPRING_DATASOURCE_PASSWORD: ewm
