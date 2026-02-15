@@ -12,6 +12,12 @@ import java.time.format.DateTimeFormatter;
 public class HitMapper {
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
+    /**
+     * Преобразует EndpointHit в сущность Hit.
+     *
+     * @param dto объект с данными запроса
+     * @return сущность для сохранения в БД
+     */
     public static Hit toHit(EndpointHit dto) {
         return Hit.builder()
                 .app(dto.getApp())

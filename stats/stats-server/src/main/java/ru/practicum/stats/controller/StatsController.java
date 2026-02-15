@@ -25,12 +25,26 @@ import java.util.List;
 public class StatsController {
     private final StatsService service;
 
+    /**
+     * Сохраняет информацию о запросе к эндпоинту.
+     *
+     * @param endpointHit данные о запросе
+     */
     @PostMapping("/hit")
     @ResponseStatus(HttpStatus.CREATED)
     public void hit(@Valid @RequestBody EndpointHit endpointHit) {
         service.saveHit(endpointHit);
     }
 
+    /**
+     * Возвращает статистику посещений за указанный период.
+     *
+     * @param start  начало периода
+     * @param end    конец периода
+     * @param uris   список URI для фильтрации (опционально)
+     * @param unique учитывать только уникальные IP
+     * @return список статистики
+     */
     @GetMapping("/stats")
     public List<ViewStats> getStats(
             @RequestParam @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss") LocalDateTime start,

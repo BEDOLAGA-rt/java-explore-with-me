@@ -30,5 +30,5 @@ public class EndpointHit {
     private String ip;
 
     @NotBlank
-    private String timestamp; // формат "yyyy-MM-dd HH:mm:ss"
+    private String timestamp;
 }

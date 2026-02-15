@@ -19,12 +19,18 @@ import java.util.List;
 public class StatsServiceImpl implements StatsService {
     private final HitRepository repository;
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Transactional
     public void saveHit(EndpointHit hitDto) {
         repository.save(HitMapper.toHit(hitDto));
     }
 
+    /**
+     * {@inheritDoc}
+     */
     @Override
     @Transactional(readOnly = true)
     public List<ViewStats> getStats(LocalDateTime start, LocalDateTime end, List<String> uris, Boolean unique) {
