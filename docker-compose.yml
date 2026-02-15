@@ -44,7 +44,7 @@ services:
       retries: 10
 
   ewm-service:
-    build: main-service   # временно, потом замените на реальный путь
+    build: main-service   # временная заглушка, потом замените на реальный путь
     container_name: ewm-service
     ports:
       - "8080:8080"

@@ -9,6 +9,9 @@ import ru.practicum.stats.model.Hit;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Репозиторий для работы с записями статистики.
+ */
 public interface HitRepository extends JpaRepository<Hit, Long> {
 
     @Query("SELECT new ru.practicum.stats.dto.ViewStats(h.app, h.uri, COUNT(DISTINCT h.ip)) " +

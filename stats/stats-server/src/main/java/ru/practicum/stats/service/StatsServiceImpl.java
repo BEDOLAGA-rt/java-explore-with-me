@@ -11,6 +11,9 @@ import ru.practicum.stats.repository.HitRepository;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Реализация сервиса статистики.
+ */
 @Service
 @RequiredArgsConstructor
 public class StatsServiceImpl implements StatsService {

@@ -14,6 +14,9 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 
+/**
+ * Сущность для хранения информации о запросе.
+ */
 @Entity
 @Table(name = "hits")
 @Getter

@@ -8,6 +8,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * DTO для сохранения информации о запросе к эндпоинту.
+ */
 @Getter
 @Setter
 @NoArgsConstructor

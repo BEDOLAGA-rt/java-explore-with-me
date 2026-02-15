@@ -6,6 +6,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+/**
+ * DTO для вывода статистики посещений.
+ */
 @Getter
 @Setter
 @NoArgsConstructor

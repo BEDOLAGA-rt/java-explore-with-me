@@ -17,6 +17,9 @@ import ru.practicum.stats.service.StatsService;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * REST-контроллер для обработки запросов статистики.
+ */
 @RestController
 @RequiredArgsConstructor
 public class StatsController {

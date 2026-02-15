@@ -20,6 +20,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * HTTP-клиент для взаимодействия с сервисом статистики.
+ */
 @Component
 public class StatsClient {
     private final RestTemplate rest;
@@ -32,11 +35,17 @@ public class StatsClient {
                 .build();
     }
 
+    /**
+     * Сохранить информацию о запросе.
+     */
     public void hit(EndpointHit hitDto) {
         HttpEntity<EndpointHit> request = new HttpEntity<>(hitDto, defaultHeaders());
         rest.postForEntity("/hit", request, Void.class);
     }
 
+    /**
+     * Получить статистику за период.
+     */
     public List<ViewStats> getStats(LocalDateTime start, LocalDateTime end,
                                     List<String> uris, Boolean unique) {
         StringBuilder urlBuilder = new StringBuilder("/stats?start={start}&end={end}");
