@@ -1,5 +1,6 @@
 package ru.practicum.main.controller.privateapi;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -13,7 +14,6 @@ import ru.practicum.main.dto.request.ParticipationRequestDto;
 import ru.practicum.main.service.EventService;
 import ru.practicum.main.service.RequestService;
 
-import jakarta.validation.Valid;
 import java.util.List;
 
 @RestController
@@ -60,7 +60,7 @@ public class PrivateEventController {
     @PatchMapping("/{eventId}/requests")
     public EventRequestStatusUpdateResult updateRequestStatus(@PathVariable Long userId,
                                                               @PathVariable Long eventId,
-                                                              @RequestBody EventRequestStatusUpdateRequest dto) {
+                                                              @Valid @RequestBody EventRequestStatusUpdateRequest dto) {
         return requestService.updateRequestStatus(userId, eventId, dto);
     }
 }

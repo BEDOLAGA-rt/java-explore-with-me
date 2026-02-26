@@ -6,9 +6,11 @@ import lombok.Data;
 @Data
 public class ParticipationRequestDto {
     private Long id;
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSS")
+
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSSSS")
     private String created;
+
     private Long event;
     private Long requester;
-    private String status; // PENDING, CONFIRMED, REJECTED, CANCELED
+    private String status;
 }

@@ -1,5 +1,6 @@
 package ru.practicum.main.controller.privateapi;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -22,8 +23,8 @@ public class PrivateRequestController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public ParticipationRequestDto addParticipationRequest(@PathVariable Long userId,
-                                                           @RequestParam Long eventId) {
+    public ParticipationRequestDto addRequest(@PathVariable Long userId,
+                                              @RequestParam Long eventId) {
         return requestService.addRequest(userId, eventId);
     }
 

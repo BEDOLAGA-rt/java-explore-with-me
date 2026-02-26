@@ -2,10 +2,13 @@ package ru.practicum.main.exception;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.LocalDateTime;
 import java.util.stream.Collectors;
@@ -50,6 +53,7 @@ public class ErrorHandler {
                 .build();
     }
 
+    // Обработка ошибок валидации @Valid
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiError handleValidation(final MethodArgumentNotValidException e) {
@@ -66,6 +70,49 @@ public class ErrorHandler {
                 .build();
     }
 
+    // Неправильный тип параметра (например, строка вместо числа)
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiError handleTypeMismatch(final MethodArgumentTypeMismatchException e) {
+        String message = String.format("Failed to convert value '%s' to required type '%s'",
+                e.getValue(), e.getRequiredType().getSimpleName());
+        log.error("400 {}", message);
+        return ApiError.builder()
+                .status(HttpStatus.BAD_REQUEST.name())
+                .reason("Incorrectly made request.")
+                .message(message)
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
+    // Отсутствие обязательного query параметра
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiError handleMissingParam(final MissingServletRequestParameterException e) {
+        String message = String.format("Required parameter '%s' is missing", e.getParameterName());
+        log.error("400 {}", message);
+        return ApiError.builder()
+                .status(HttpStatus.BAD_REQUEST.name())
+                .reason("Incorrectly made request.")
+                .message(message)
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
+    // Неправильный JSON (например, неверный формат даты)
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiError handleHttpMessageNotReadable(final HttpMessageNotReadableException e) {
+        log.error("400 {}", e.getMessage());
+        return ApiError.builder()
+                .status(HttpStatus.BAD_REQUEST.name())
+                .reason("Incorrectly made request.")
+                .message("Invalid request body: " + e.getMostSpecificCause().getMessage())
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
+    // Все остальные непредвиденные ошибки – 500
     @ExceptionHandler(Throwable.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ApiError handleOther(final Throwable e) {

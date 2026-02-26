@@ -13,13 +13,12 @@ import ru.practicum.main.service.CompilationService;
 @RequestMapping("/admin/compilations")
 @RequiredArgsConstructor
 public class AdminCompilationController {
-
     private final CompilationService compilationService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public CompilationDto saveCompilation(@Valid @RequestBody NewCompilationDto newCompilationDto) {
-        return compilationService.saveCompilation(newCompilationDto);
+    public CompilationDto saveCompilation(@Valid @RequestBody NewCompilationDto dto) {
+        return compilationService.saveCompilation(dto);
     }
 
     @DeleteMapping("/{compId}")
@@ -30,7 +29,7 @@ public class AdminCompilationController {
 
     @PatchMapping("/{compId}")
     public CompilationDto updateCompilation(@PathVariable Long compId,
-                                            @Valid @RequestBody UpdateCompilationRequest updateRequest) {
-        return compilationService.updateCompilation(compId, updateRequest);
+                                            @Valid @RequestBody UpdateCompilationRequest dto) {
+        return compilationService.updateCompilation(compId, dto);
     }
 }

@@ -14,7 +14,6 @@ import java.util.List;
 @RequestMapping("/admin/users")
 @RequiredArgsConstructor
 public class AdminUserController {
-
     private final UserService userService;
 
     @GetMapping
@@ -26,8 +25,8 @@ public class AdminUserController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public UserDto registerUser(@Valid @RequestBody NewUserRequest newUserRequest) {
-        return userService.registerUser(newUserRequest);
+    public UserDto registerUser(@Valid @RequestBody NewUserRequest request) {
+        return userService.registerUser(request);
     }
 
     @DeleteMapping("/{userId}")
