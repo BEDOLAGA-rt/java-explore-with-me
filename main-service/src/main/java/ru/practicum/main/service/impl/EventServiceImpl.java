@@ -177,7 +177,6 @@ public class EventServiceImpl implements EventService {
     public List<EventFullDto> getEventsByAdmin(List<Long> users, List<String> states, List<Long> categories,
                                                LocalDateTime rangeStart, LocalDateTime rangeEnd,
                                                int from, int size) {
-        // финальные переменные для использования в лямбде
         final List<Long> usersParam = users;
         final List<String> statesParam = states;
         final List<Long> categoriesParam = categories;
@@ -293,9 +292,13 @@ public class EventServiceImpl implements EventService {
                                                LocalDateTime rangeStart, LocalDateTime rangeEnd,
                                                Boolean onlyAvailable, String sort,
                                                int from, int size, HttpServletRequest request) {
+        // Проверка корректности диапазона дат
+        if (rangeStart != null && rangeEnd != null && rangeStart.isAfter(rangeEnd)) {
+            throw new BadRequestException("Start date must be before end date");
+        }
+
         statService.hit("ewm-main-service", request.getRequestURI(), request.getRemoteAddr(), LocalDateTime.now());
 
-        // финальные переменные для использования в лямбде
         final LocalDateTime start = rangeStart != null ? rangeStart : LocalDateTime.now();
         final LocalDateTime end = rangeEnd != null ? rangeEnd : LocalDateTime.now().plusYears(100);
 
@@ -354,9 +357,14 @@ public class EventServiceImpl implements EventService {
 
         LocalDateTime start = event.getPublishedOn() != null ? event.getPublishedOn() : LocalDateTime.now().minusYears(1);
         List<String> uris = List.of("/events/" + id);
-        var stats = statService.getStats(start, LocalDateTime.now(), uris, true);
-        long views = stats.isEmpty() ? 0 : stats.get(0).getHits();
-        event.setViews(views);
+        try {
+            var stats = statService.getStats(start, LocalDateTime.now(), uris, true);
+            long views = stats.isEmpty() ? 0 : stats.get(0).getHits();
+            event.setViews(views);
+        } catch (Exception e) {
+            log.error("Failed to get views from stats service for event id={}", id, e);
+            // оставляем views как есть (0)
+        }
 
         return EventMapper.toEventFullDto(event);
     }
@@ -365,26 +373,31 @@ public class EventServiceImpl implements EventService {
 
     private void updateViews(List<Event> events) {
         if (events.isEmpty()) return;
-        List<String> uris = events.stream()
-                .map(e -> "/events/" + e.getId())
-                .collect(Collectors.toList());
+        try {
+            List<String> uris = events.stream()
+                    .map(e -> "/events/" + e.getId())
+                    .collect(Collectors.toList());
 
-        LocalDateTime start = events.stream()
-                .map(Event::getPublishedOn)
-                .filter(d -> d != null)
-                .min(LocalDateTime::compareTo)
-                .orElse(LocalDateTime.now().minusYears(10));
+            LocalDateTime start = events.stream()
+                    .map(Event::getPublishedOn)
+                    .filter(d -> d != null)
+                    .min(LocalDateTime::compareTo)
+                    .orElse(LocalDateTime.now().minusYears(10));
 
-        var stats = statService.getStats(start, LocalDateTime.now(), uris, true);
-        var viewsMap = stats.stream()
-                .collect(Collectors.toMap(
-                        ru.practicum.stats.dto.ViewStats::getUri,
-                        ru.practicum.stats.dto.ViewStats::getHits
-                ));
+            var stats = statService.getStats(start, LocalDateTime.now(), uris, true);
+            var viewsMap = stats.stream()
+                    .collect(Collectors.toMap(
+                            ru.practicum.stats.dto.ViewStats::getUri,
+                            ru.practicum.stats.dto.ViewStats::getHits
+                    ));
 
-        for (Event event : events) {
-            String uri = "/events/" + event.getId();
-            event.setViews(viewsMap.getOrDefault(uri, 0L));
+            for (Event event : events) {
+                String uri = "/events/" + event.getId();
+                event.setViews(viewsMap.getOrDefault(uri, 0L));
+            }
+        } catch (Exception e) {
+            log.error("Failed to get views from stats service", e);
+            // Если статистика недоступна, оставляем views как есть (0)
         }
     }
 

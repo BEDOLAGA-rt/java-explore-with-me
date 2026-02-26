@@ -64,7 +64,6 @@ public class RequestServiceImpl implements RequestService {
             }
         }
 
-        // Усекаем до микросекунд, чтобы избежать расхождений в тестах
         LocalDateTime now = LocalDateTime.now().truncatedTo(ChronoUnit.MICROS);
 
         Request request = Request.builder()
