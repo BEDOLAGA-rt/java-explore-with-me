@@ -359,8 +359,10 @@ public class EventServiceImpl implements EventService {
         List<String> uris = List.of("/events/" + id);
         try {
             var stats = statService.getStats(start, LocalDateTime.now(), uris, true);
-            long views = stats.isEmpty() ? 0 : stats.get(0).getHits();
-            event.setViews(views);
+            if (stats != null && !stats.isEmpty()) {
+                long views = stats.get(0).getHits();
+                event.setViews(views);
+            }
         } catch (Exception e) {
             log.error("Failed to get views from stats service for event id={}", id, e);
             // оставляем views как есть (0)
@@ -385,6 +387,10 @@ public class EventServiceImpl implements EventService {
                     .orElse(LocalDateTime.now().minusYears(10));
 
             var stats = statService.getStats(start, LocalDateTime.now(), uris, true);
+            if (stats == null) {
+                log.warn("Stats service returned null for uris: {}", uris);
+                return;
+            }
             var viewsMap = stats.stream()
                     .collect(Collectors.toMap(
                             ru.practicum.stats.dto.ViewStats::getUri,

@@ -55,7 +55,6 @@ public class ErrorHandler {
                 .build();
     }
 
-    // Валидация @Valid в теле запроса
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiError handleValidation(final MethodArgumentNotValidException e) {
@@ -72,7 +71,6 @@ public class ErrorHandler {
                 .build();
     }
 
-    // Валидация параметров запроса (например, @RequestParam с ограничениями)
     @ExceptionHandler(ConstraintViolationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiError handleConstraintViolation(final ConstraintViolationException e) {
@@ -88,7 +86,6 @@ public class ErrorHandler {
                 .build();
     }
 
-    // Неправильный тип параметра (например, строка вместо числа)
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiError handleTypeMismatch(final MethodArgumentTypeMismatchException e) {
@@ -103,7 +100,6 @@ public class ErrorHandler {
                 .build();
     }
 
-    // Отсутствие обязательного query параметра
     @ExceptionHandler(MissingServletRequestParameterException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiError handleMissingParam(final MissingServletRequestParameterException e) {
@@ -117,7 +113,6 @@ public class ErrorHandler {
                 .build();
     }
 
-    // Неправильный JSON (например, неверный формат даты)
     @ExceptionHandler(HttpMessageNotReadableException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiError handleHttpMessageNotReadable(final HttpMessageNotReadableException e) {
@@ -130,7 +125,6 @@ public class ErrorHandler {
                 .build();
     }
 
-    // Ошибки целостности данных (например, уникальность) – возвращаем 409
     @ExceptionHandler(DataIntegrityViolationException.class)
     @ResponseStatus(HttpStatus.CONFLICT)
     public ApiError handleDataIntegrityViolation(final DataIntegrityViolationException e) {
@@ -143,7 +137,6 @@ public class ErrorHandler {
                 .build();
     }
 
-    // Все остальные непредвиденные ошибки – 500
     @ExceptionHandler(Throwable.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ApiError handleOther(final Throwable e) {

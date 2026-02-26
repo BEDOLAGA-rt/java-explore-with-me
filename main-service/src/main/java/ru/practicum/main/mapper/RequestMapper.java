@@ -13,7 +13,6 @@ public class RequestMapper {
     public static ParticipationRequestDto toParticipationRequestDto(Request request) {
         ParticipationRequestDto dto = new ParticipationRequestDto();
         dto.setId(request.getId());
-        // Усекаем до микросекунд, чтобы избежать расхождений
         dto.setCreated(request.getCreated().truncatedTo(ChronoUnit.MICROS).format(FORMATTER));
         dto.setEvent(request.getEvent().getId());
         dto.setRequester(request.getRequester().getId());
