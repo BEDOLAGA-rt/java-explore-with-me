@@ -1,5 +1,6 @@
 package ru.practicum.main.exception;
 
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -61,6 +62,22 @@ public class ErrorHandler {
                 .map(error -> String.format("Field: %s. Error: %s. Value: %s",
                         error.getField(), error.getDefaultMessage(), error.getRejectedValue()))
                 .collect(Collectors.joining("; "));
+        log.error("400 {}", message);
+        return ApiError.builder()
+                .status(HttpStatus.BAD_REQUEST.name())
+                .reason("Incorrectly made request.")
+                .message(message)
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
+    // Обработка ошибок валидации параметров запроса (query params)
+    @ExceptionHandler(ConstraintViolationException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiError handleConstraintViolation(final ConstraintViolationException e) {
+        String message = e.getConstraintViolations().stream()
+                .map(violation -> violation.getPropertyPath() + ": " + violation.getMessage())
+                .collect(Collectors.joining(", "));
         log.error("400 {}", message);
         return ApiError.builder()
                 .status(HttpStatus.BAD_REQUEST.name())
