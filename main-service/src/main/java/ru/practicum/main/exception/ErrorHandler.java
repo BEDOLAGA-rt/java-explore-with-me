@@ -2,6 +2,7 @@ package ru.practicum.main.exception;
 
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -42,6 +43,19 @@ public class ErrorHandler {
                 .build();
     }
 
+    // Обработка нарушений целостности данных на уровне БД (например, уникальность)
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public ApiError handleDataIntegrityViolation(final DataIntegrityViolationException e) {
+        log.error("409 {}", e.getMessage());
+        return ApiError.builder()
+                .status(HttpStatus.CONFLICT.name())
+                .reason("Integrity constraint has been violated.")
+                .message(e.getMostSpecificCause().getMessage())
+                .timestamp(LocalDateTime.now())
+                .build();
+    }
+
     @ExceptionHandler(BadRequestException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiError handleBadRequest(final BadRequestException e) {
@@ -54,7 +68,6 @@ public class ErrorHandler {
                 .build();
     }
 
-    // Обработка ошибок валидации @Valid
     @ExceptionHandler(MethodArgumentNotValidException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiError handleValidation(final MethodArgumentNotValidException e) {
@@ -71,7 +84,6 @@ public class ErrorHandler {
                 .build();
     }
 
-    // Обработка ошибок валидации параметров запроса (query params)
     @ExceptionHandler(ConstraintViolationException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiError handleConstraintViolation(final ConstraintViolationException e) {
@@ -87,7 +99,6 @@ public class ErrorHandler {
                 .build();
     }
 
-    // Неправильный тип параметра (например, строка вместо числа)
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiError handleTypeMismatch(final MethodArgumentTypeMismatchException e) {
@@ -102,7 +113,6 @@ public class ErrorHandler {
                 .build();
     }
 
-    // Отсутствие обязательного query параметра
     @ExceptionHandler(MissingServletRequestParameterException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiError handleMissingParam(final MissingServletRequestParameterException e) {
@@ -116,7 +126,6 @@ public class ErrorHandler {
                 .build();
     }
 
-    // Неправильный JSON (например, неверный формат даты)
     @ExceptionHandler(HttpMessageNotReadableException.class)
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiError handleHttpMessageNotReadable(final HttpMessageNotReadableException e) {
@@ -129,7 +138,6 @@ public class ErrorHandler {
                 .build();
     }
 
-    // Все остальные непредвиденные ошибки – 500
     @ExceptionHandler(Throwable.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ApiError handleOther(final Throwable e) {

@@ -22,6 +22,7 @@ import ru.practicum.main.repository.UserRepository;
 import ru.practicum.main.service.RequestService;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -38,30 +39,24 @@ public class RequestServiceImpl implements RequestService {
     @Override
     @Transactional
     public ParticipationRequestDto addRequest(Long userId, Long eventId) {
-        // Проверяем существование пользователя
         User requester = userRepository.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User with id=" + userId + " not found"));
 
-        // Проверяем существование события
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " not found"));
 
-        // Инициатор события не может подать заявку
         if (event.getInitiator().getId().equals(userId)) {
             throw new ConflictException("Initiator cannot request participation in own event");
         }
 
-        // Событие должно быть опубликовано
         if (event.getState() != State.PUBLISHED) {
             throw new ConflictException("Event must be published");
         }
 
-        // Нельзя повторный запрос
         if (requestRepository.findByEventAndRequester(event, requester).isPresent()) {
             throw new ConflictException("Request already exists");
         }
 
-        // Проверка лимита участников
         if (event.getParticipantLimit() > 0) {
             long confirmedRequests = requestRepository.countByEventAndStatus(event, RequestStatus.CONFIRMED);
             if (confirmedRequests >= event.getParticipantLimit()) {
@@ -69,9 +64,11 @@ public class RequestServiceImpl implements RequestService {
             }
         }
 
-        // Создаём запрос
+        // Усекаем до микросекунд, чтобы избежать расхождений в тестах
+        LocalDateTime now = LocalDateTime.now().truncatedTo(ChronoUnit.MICROS);
+
         Request request = Request.builder()
-                .created(LocalDateTime.now())
+                .created(now)
                 .event(event)
                 .requester(requester)
                 .status(needAutoConfirm(event) ? RequestStatus.CONFIRMED : RequestStatus.PENDING)
@@ -79,7 +76,6 @@ public class RequestServiceImpl implements RequestService {
 
         request = requestRepository.save(request);
 
-        // Если статус сразу CONFIRMED, увеличиваем счётчик подтверждённых запросов
         if (request.getStatus() == RequestStatus.CONFIRMED) {
             event.setConfirmedRequests(event.getConfirmedRequests() + 1);
             eventRepository.save(event);
@@ -113,7 +109,6 @@ public class RequestServiceImpl implements RequestService {
             throw new NotFoundException("Request not found for this user");
         }
 
-        // Только запросы в статусе PENDING можно отменить
         if (request.getStatus() != RequestStatus.PENDING) {
             throw new ConflictException("Only pending requests can be canceled");
         }
@@ -128,7 +123,6 @@ public class RequestServiceImpl implements RequestService {
     @Override
     @Transactional(readOnly = true)
     public List<ParticipationRequestDto> getEventRequests(Long userId, Long eventId) {
-        // Проверяем, что пользователь - инициатор события
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " not found"));
 
@@ -145,7 +139,6 @@ public class RequestServiceImpl implements RequestService {
     @Transactional
     public EventRequestStatusUpdateResult updateRequestStatus(Long userId, Long eventId,
                                                               EventRequestStatusUpdateRequest dto) {
-        // Проверка события и прав доступа
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new NotFoundException("Event with id=" + eventId + " not found"));
 
@@ -153,13 +146,11 @@ public class RequestServiceImpl implements RequestService {
             throw new NotFoundException("Event not found for this user");
         }
 
-        // Получаем запросы по списку id
         List<Request> requests = requestRepository.findAllByIdIn(dto.getRequestIds());
         if (requests.size() != dto.getRequestIds().size()) {
             throw new NotFoundException("Some requests not found");
         }
 
-        // Проверяем, что все запросы относятся к данному событию и имеют статус PENDING
         for (Request req : requests) {
             if (!req.getEvent().getId().equals(eventId)) {
                 throw new ConflictException("Request with id=" + req.getId() + " does not belong to this event");
@@ -169,7 +160,6 @@ public class RequestServiceImpl implements RequestService {
             }
         }
 
-        // Преобразуем строку из DTO в enum
         RequestStatus newStatus;
         try {
             newStatus = RequestStatus.valueOf(dto.getStatus());
@@ -181,11 +171,9 @@ public class RequestServiceImpl implements RequestService {
         List<ParticipationRequestDto> rejectedRequests = new ArrayList<>();
 
         if (newStatus == RequestStatus.CONFIRMED) {
-            // Проверка лимита
             long confirmedCount = requestRepository.countByEventAndStatus(event, RequestStatus.CONFIRMED);
             int limit = event.getParticipantLimit();
 
-            // Если лимит 0, ограничений нет
             if (limit > 0 && confirmedCount >= limit) {
                 throw new ConflictException("The participant limit has been reached");
             }
@@ -200,7 +188,6 @@ public class RequestServiceImpl implements RequestService {
                     rejectedRequests.add(RequestMapper.toParticipationRequestDto(req));
                 }
             }
-            // Обновляем счётчик подтверждённых запросов у события
             event.setConfirmedRequests(confirmedCount);
             eventRepository.save(event);
         } else if (newStatus == RequestStatus.REJECTED) {
@@ -223,11 +210,7 @@ public class RequestServiceImpl implements RequestService {
         return result;
     }
 
-    /**
-     * Определяет, нужно ли автоматически подтверждать заявку.
-     */
     private boolean needAutoConfirm(Event event) {
-        // Автоподтверждение, если пре-модерация отключена или лимит участников 0
         return !event.getRequestModeration() || event.getParticipantLimit() == 0;
     }
 }
