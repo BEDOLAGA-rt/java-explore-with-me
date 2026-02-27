@@ -297,7 +297,12 @@ public class EventServiceImpl implements EventService {
             throw new BadRequestException("Start date must be before end date");
         }
 
-        statService.hit("ewm-main-service", request.getRequestURI(), request.getRemoteAddr(), LocalDateTime.now());
+        // Сохраняем хит в статистику, игнорируем ошибки
+        try {
+            statService.hit("ewm-main-service", request.getRequestURI(), request.getRemoteAddr(), LocalDateTime.now());
+        } catch (Exception e) {
+            log.error("Failed to save hit to stats service", e);
+        }
 
         final LocalDateTime start = rangeStart != null ? rangeStart : LocalDateTime.now();
         final LocalDateTime end = rangeEnd != null ? rangeEnd : LocalDateTime.now().plusYears(100);
@@ -353,7 +358,12 @@ public class EventServiceImpl implements EventService {
         Event event = eventRepository.findByIdAndState(id, State.PUBLISHED)
                 .orElseThrow(() -> new NotFoundException("Event with id=" + id + " not found"));
 
-        statService.hit("ewm-main-service", request.getRequestURI(), request.getRemoteAddr(), LocalDateTime.now());
+        // Сохраняем хит в статистику, игнорируем ошибки
+        try {
+            statService.hit("ewm-main-service", request.getRequestURI(), request.getRemoteAddr(), LocalDateTime.now());
+        } catch (Exception e) {
+            log.error("Failed to save hit to stats service for event id={}", id, e);
+        }
 
         LocalDateTime start = event.getPublishedOn() != null ? event.getPublishedOn() : LocalDateTime.now().minusYears(1);
         List<String> uris = List.of("/events/" + id);
@@ -365,7 +375,6 @@ public class EventServiceImpl implements EventService {
             }
         } catch (Exception e) {
             log.error("Failed to get views from stats service for event id={}", id, e);
-            // оставляем views как есть (0)
         }
 
         return EventMapper.toEventFullDto(event);
@@ -403,7 +412,6 @@ public class EventServiceImpl implements EventService {
             }
         } catch (Exception e) {
             log.error("Failed to get views from stats service", e);
-            // Если статистика недоступна, оставляем views как есть (0)
         }
     }
 
