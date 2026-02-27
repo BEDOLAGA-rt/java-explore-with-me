@@ -15,6 +15,7 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
     show-sql: true
+    defer-datasource-initialization: true
   sql:
     init:
       mode: always
@@ -28,4 +29,3 @@ logging:
 
 stats-server:
   url: ${STATS_SERVER_URL:http://localhost:9090}
-
