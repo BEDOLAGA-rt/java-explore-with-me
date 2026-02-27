@@ -24,8 +24,8 @@ spring:
 logging:
   level:
     ru.practicum: DEBUG
-    org.springframework.jdbc: DEBUG
-    org.springframework.jdbc.datasource.init: DEBUG
-
+    ru.practicum.main.controller: DEBUG
+    ru.practicum.main.service: DEBUG
+    org.springframework.web: DEBUG
 stats-server:
   url: ${STATS_SERVER_URL:http://localhost:9090}

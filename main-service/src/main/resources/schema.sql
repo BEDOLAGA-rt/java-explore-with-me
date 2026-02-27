@@ -1,5 +1,4 @@
 -- Удаление существующих таблиц (для чистой инициализации, если нужно)
--- В production лучше использовать IF NOT EXISTS
 DROP TABLE IF EXISTS compilation_events;
 DROP TABLE IF EXISTS requests;
 DROP TABLE IF EXISTS events;
