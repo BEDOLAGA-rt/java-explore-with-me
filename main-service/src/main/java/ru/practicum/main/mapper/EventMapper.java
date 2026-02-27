@@ -20,13 +20,16 @@ public class EventMapper {
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     public static Event toEvent(NewEventDto dto, Category category, User initiator) {
+        if (dto == null || category == null || initiator == null) {
+            throw new IllegalArgumentException("DTO, category and initiator must not be null");
+        }
         return Event.builder()
                 .annotation(dto.getAnnotation())
                 .category(category)
                 .confirmedRequests(0L)
                 .createdOn(LocalDateTime.now())
                 .description(dto.getDescription())
-                .eventDate(dto.getEventDate())          // теперь LocalDateTime
+                .eventDate(dto.getEventDate())
                 .initiator(initiator)
                 .location(toModelLocation(dto.getLocation()))
                 .paid(dto.getPaid() != null ? dto.getPaid() : false)
@@ -39,37 +42,39 @@ public class EventMapper {
     }
 
     public static EventFullDto toEventFullDto(Event event) {
+        if (event == null) return null;
         EventFullDto dto = new EventFullDto();
         dto.setId(event.getId());
         dto.setAnnotation(event.getAnnotation());
         dto.setCategory(toCategoryDto(event.getCategory()));
-        dto.setConfirmedRequests(event.getConfirmedRequests());
-        dto.setCreatedOn(event.getCreatedOn().format(FORMATTER));
+        dto.setConfirmedRequests(event.getConfirmedRequests() != null ? event.getConfirmedRequests() : 0L);
+        dto.setCreatedOn(event.getCreatedOn() != null ? event.getCreatedOn().format(FORMATTER) : null);
         dto.setDescription(event.getDescription());
-        dto.setEventDate(event.getEventDate().format(FORMATTER));
+        dto.setEventDate(event.getEventDate() != null ? event.getEventDate().format(FORMATTER) : null);
         dto.setInitiator(toUserShortDto(event.getInitiator()));
         dto.setLocation(toLocationDto(event.getLocation()));
         dto.setPaid(event.getPaid());
         dto.setParticipantLimit(event.getParticipantLimit());
         dto.setPublishedOn(event.getPublishedOn() != null ? event.getPublishedOn().format(FORMATTER) : null);
         dto.setRequestModeration(event.getRequestModeration());
-        dto.setState(event.getState().toString());
+        dto.setState(event.getState() != null ? event.getState().toString() : null);
         dto.setTitle(event.getTitle());
-        dto.setViews(event.getViews());
+        dto.setViews(event.getViews() != null ? event.getViews() : 0L);
         return dto;
     }
 
     public static EventShortDto toEventShortDto(Event event) {
+        if (event == null) return null;
         EventShortDto dto = new EventShortDto();
         dto.setId(event.getId());
         dto.setAnnotation(event.getAnnotation());
         dto.setCategory(toCategoryDto(event.getCategory()));
-        dto.setConfirmedRequests(event.getConfirmedRequests());
-        dto.setEventDate(event.getEventDate().format(FORMATTER));
+        dto.setConfirmedRequests(event.getConfirmedRequests() != null ? event.getConfirmedRequests() : 0L);
+        dto.setEventDate(event.getEventDate() != null ? event.getEventDate().format(FORMATTER) : null);
         dto.setInitiator(toUserShortDto(event.getInitiator()));
         dto.setPaid(event.getPaid());
         dto.setTitle(event.getTitle());
-        dto.setViews(event.getViews());
+        dto.setViews(event.getViews() != null ? event.getViews() : 0L);
         return dto;
     }
 
