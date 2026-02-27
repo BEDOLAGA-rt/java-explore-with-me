@@ -24,8 +24,9 @@ spring:
 logging:
   level:
     ru.practicum: DEBUG
-    ru.practicum.main.controller: DEBUG
-    ru.practicum.main.service: DEBUG
     org.springframework.web: DEBUG
+    org.springframework.jdbc: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql: TRACE
 stats-server:
   url: ${STATS_SERVER_URL:http://localhost:9090}
