@@ -300,6 +300,10 @@ public class EventServiceImpl implements EventService {
                                                LocalDateTime rangeStart, LocalDateTime rangeEnd,
                                                Boolean onlyAvailable, String sort,
                                                int from, int size, HttpServletRequest request) {
+        log.info("getPublicEvents called with text='{}', categories={}, paid={}, rangeStart={}, rangeEnd={}, onlyAvailable={}, sort={}, from={}, size={}",
+                text != null ? text.substring(0, Math.min(text.length(), 50)) : null,
+                categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
+
         // Валидация входных параметров
         if (from < 0 || size <= 0) {
             throw new BadRequestException("Invalid pagination parameters");
@@ -309,13 +313,10 @@ public class EventServiceImpl implements EventService {
             throw new BadRequestException("Start date must be before end date");
         }
 
-        log.info("Public events request: text='{}', categories={}, paid={}, rangeStart={}, rangeEnd={}, onlyAvailable={}, sort={}, from={}, size={}",
-                text != null ? text.substring(0, Math.min(text.length(), 50)) : null,
-                categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
-
         // Сохраняем хит в статистику, игнорируем ошибки
         try {
             statService.hit("ewm-main-service", request.getRequestURI(), request.getRemoteAddr(), LocalDateTime.now());
+            log.debug("Hit saved to stats service");
         } catch (Exception e) {
             log.error("Failed to save hit to stats service", e);
         }
@@ -325,65 +326,86 @@ public class EventServiceImpl implements EventService {
 
         Specification<Event> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
-            predicates.add(cb.greaterThanOrEqualTo(root.get("eventDate"), start));
-            predicates.add(cb.lessThanOrEqualTo(root.get("eventDate"), end));
-            predicates.add(cb.equal(root.get("state"), State.PUBLISHED));
+            try {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("eventDate"), start));
+                predicates.add(cb.lessThanOrEqualTo(root.get("eventDate"), end));
+                predicates.add(cb.equal(root.get("state"), State.PUBLISHED));
 
-            if (text != null && !text.isBlank()) {
-                // Для очень длинного текста используем первые 200 символов для поиска
-                String searchText = text.length() > 200 ? text.substring(0, 200) : text;
-                String pattern = "%" + searchText.toLowerCase() + "%";
-                Predicate annotationLike = cb.like(cb.lower(root.get("annotation")), pattern);
-                Predicate descriptionLike = cb.like(cb.lower(root.get("description")), pattern);
-                predicates.add(cb.or(annotationLike, descriptionLike));
-            }
-            if (categories != null && !categories.isEmpty()) {
-                predicates.add(root.get("category").get("id").in(categories));
-            }
-            if (paid != null) {
-                predicates.add(cb.equal(root.get("paid"), paid));
-            }
-            if (onlyAvailable != null && onlyAvailable) {
-                predicates.add(cb.or(
-                        cb.equal(root.get("participantLimit"), 0),
-                        cb.and(
-                                cb.isNotNull(root.get("confirmedRequests")),
-                                cb.isNotNull(root.get("participantLimit")),
-                                cb.lessThan(root.get("confirmedRequests"), root.get("participantLimit"))
-                        )
-                ));
+                if (text != null && !text.isBlank()) {
+                    String searchText = text.length() > 200 ? text.substring(0, 200) : text;
+                    String pattern = "%" + searchText.toLowerCase() + "%";
+                    Predicate annotationLike = cb.like(cb.lower(root.get("annotation")), pattern);
+                    Predicate descriptionLike = cb.like(cb.lower(root.get("description")), pattern);
+                    predicates.add(cb.or(annotationLike, descriptionLike));
+                    log.debug("Added text filter: {}", searchText);
+                }
+                if (categories != null && !categories.isEmpty()) {
+                    predicates.add(root.get("category").get("id").in(categories));
+                    log.debug("Added categories filter: {}", categories);
+                }
+                if (paid != null) {
+                    predicates.add(cb.equal(root.get("paid"), paid));
+                    log.debug("Added paid filter: {}", paid);
+                }
+                if (onlyAvailable != null && onlyAvailable) {
+                    Predicate limitZero = cb.equal(root.get("participantLimit"), 0);
+                    Predicate confirmedNotNull = cb.isNotNull(root.get("confirmedRequests"));
+                    Predicate limitNotNull = cb.isNotNull(root.get("participantLimit"));
+                    Predicate lessThan = cb.lessThan(root.get("confirmedRequests"), root.get("participantLimit"));
+                    predicates.add(cb.or(limitZero, cb.and(confirmedNotNull, limitNotNull, lessThan)));
+                    log.debug("Added onlyAvailable filter");
+                }
+            } catch (Exception e) {
+                log.error("Error building specification", e);
+                throw new RuntimeException("Error building specification", e);
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         };
 
         Pageable pageable = PageRequest.of(from / size, size);
-        List<Event> events = eventRepository.findAll(spec, pageable).getContent();
+        List<Event> events;
+        try {
+            events = eventRepository.findAll(spec, pageable).getContent();
+            log.debug("Found {} events", events.size());
+        } catch (Exception e) {
+            log.error("Error executing query", e);
+            throw new RuntimeException("Error executing query", e);
+        }
 
         try {
             updateViews(events);
+            log.debug("Views updated for {} events", events.size());
         } catch (Exception e) {
-            log.error("Failed to update views for events", e);
+            log.error("Error updating views", e);
         }
 
         if (sort != null) {
-            if (sort.equals("EVENT_DATE")) {
-                events.sort(Comparator.comparing(Event::getEventDate));
-            } else if (sort.equals("VIEWS")) {
-                events.sort(Comparator.comparing(Event::getViews).reversed());
+            try {
+                if (sort.equals("EVENT_DATE")) {
+                    events.sort(Comparator.comparing(Event::getEventDate));
+                } else if (sort.equals("VIEWS")) {
+                    events.sort(Comparator.comparing(Event::getViews).reversed());
+                }
+                log.debug("Sorted by {}", sort);
+            } catch (Exception e) {
+                log.error("Error sorting events", e);
             }
         }
 
-        return events.stream()
+        List<EventShortDto> result = events.stream()
                 .map(event -> {
                     try {
                         return EventMapper.toEventShortDto(event);
                     } catch (Exception e) {
-                        log.error("Error mapping event to short dto: {}", event.getId(), e);
+                        log.error("Error mapping event id={} to short dto", event.getId(), e);
                         return null;
                     }
                 })
                 .filter(dto -> dto != null)
                 .collect(Collectors.toList());
+
+        log.info("Returning {} events", result.size());
+        return result;
     }
 
     @Override
@@ -437,7 +459,7 @@ public class EventServiceImpl implements EventService {
                     .collect(Collectors.toMap(
                             ru.practicum.stats.dto.ViewStats::getUri,
                             ru.practicum.stats.dto.ViewStats::getHits,
-                            (v1, v2) -> v2 // если дубликаты
+                            (v1, v2) -> v2
                     ));
 
             for (Event event : events) {
