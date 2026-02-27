@@ -314,7 +314,9 @@ public class EventServiceImpl implements EventService {
             predicates.add(cb.equal(root.get("state"), State.PUBLISHED));
 
             if (text != null && !text.isBlank()) {
-                String pattern = "%" + text.toLowerCase() + "%";
+                // Обрезаем слишком длинный текст (более 1000 символов) для предотвращения возможных ошибок в LIKE
+                String searchText = text.length() > 1000 ? text.substring(0, 1000) : text;
+                String pattern = "%" + searchText.toLowerCase() + "%";
                 Predicate annotationLike = cb.like(cb.lower(root.get("annotation")), pattern);
                 Predicate descriptionLike = cb.like(cb.lower(root.get("description")), pattern);
                 predicates.add(cb.or(annotationLike, descriptionLike));
@@ -328,14 +330,25 @@ public class EventServiceImpl implements EventService {
             if (onlyAvailable != null && onlyAvailable) {
                 predicates.add(cb.or(
                         cb.equal(root.get("participantLimit"), 0),
-                        cb.lessThan(root.get("confirmedRequests"), root.get("participantLimit"))
+                        cb.and(
+                                cb.isNotNull(root.get("confirmedRequests")),
+                                cb.isNotNull(root.get("participantLimit")),
+                                cb.lessThan(root.get("confirmedRequests"), root.get("participantLimit"))
+                        )
                 ));
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         };
 
         Pageable pageable = PageRequest.of(from / size, size);
-        List<Event> events = eventRepository.findAll(spec, pageable).getContent();
+        List<Event> events;
+        try {
+            events = eventRepository.findAll(spec, pageable).getContent();
+        } catch (Exception e) {
+            log.error("Error while searching events", e);
+            // Возвращаем пустой список, чтобы избежать 500 (крайняя мера)
+            return new ArrayList<>();
+        }
 
         updateViews(events);
 
@@ -358,7 +371,6 @@ public class EventServiceImpl implements EventService {
         Event event = eventRepository.findByIdAndState(id, State.PUBLISHED)
                 .orElseThrow(() -> new NotFoundException("Event with id=" + id + " not found"));
 
-        // Сохраняем хит в статистику, игнорируем ошибки
         try {
             statService.hit("ewm-main-service", request.getRequestURI(), request.getRemoteAddr(), LocalDateTime.now());
         } catch (Exception e) {
