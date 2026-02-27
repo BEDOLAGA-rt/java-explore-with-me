@@ -326,51 +326,41 @@ public class EventServiceImpl implements EventService {
 
         Specification<Event> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
-            try {
-                predicates.add(cb.greaterThanOrEqualTo(root.get("eventDate"), start));
-                predicates.add(cb.lessThanOrEqualTo(root.get("eventDate"), end));
-                predicates.add(cb.equal(root.get("state"), State.PUBLISHED));
+            predicates.add(cb.greaterThanOrEqualTo(root.get("eventDate"), start));
+            predicates.add(cb.lessThanOrEqualTo(root.get("eventDate"), end));
+            predicates.add(cb.equal(root.get("state"), State.PUBLISHED));
 
-                if (text != null && !text.isBlank()) {
-                    String searchText = text.length() > 200 ? text.substring(0, 200) : text;
-                    String pattern = "%" + searchText.toLowerCase() + "%";
-                    Predicate annotationLike = cb.like(cb.lower(root.get("annotation")), pattern);
-                    Predicate descriptionLike = cb.like(cb.lower(root.get("description")), pattern);
-                    predicates.add(cb.or(annotationLike, descriptionLike));
-                    log.debug("Added text filter: {}", searchText);
-                }
-                if (categories != null && !categories.isEmpty()) {
-                    predicates.add(root.get("category").get("id").in(categories));
-                    log.debug("Added categories filter: {}", categories);
-                }
-                if (paid != null) {
-                    predicates.add(cb.equal(root.get("paid"), paid));
-                    log.debug("Added paid filter: {}", paid);
-                }
-                if (onlyAvailable != null && onlyAvailable) {
-                    Predicate limitZero = cb.equal(root.get("participantLimit"), 0);
-                    Predicate confirmedNotNull = cb.isNotNull(root.get("confirmedRequests"));
-                    Predicate limitNotNull = cb.isNotNull(root.get("participantLimit"));
-                    Predicate lessThan = cb.lessThan(root.get("confirmedRequests"), root.get("participantLimit"));
-                    predicates.add(cb.or(limitZero, cb.and(confirmedNotNull, limitNotNull, lessThan)));
-                    log.debug("Added onlyAvailable filter");
-                }
-            } catch (Exception e) {
-                log.error("Error building specification", e);
-                throw new RuntimeException("Error building specification", e);
+            if (text != null && !text.isBlank()) {
+                // Ограничиваем длину текста до 100 символов для безопасности
+                String searchText = text.length() > 100 ? text.substring(0, 100) : text;
+                String pattern = "%" + searchText.toLowerCase() + "%";
+                Predicate annotationLike = cb.like(cb.lower(root.get("annotation")), pattern);
+                Predicate descriptionLike = cb.like(cb.lower(root.get("description")), pattern);
+                predicates.add(cb.or(annotationLike, descriptionLike));
+                log.debug("Added text filter: {}", searchText);
+            }
+            if (categories != null && !categories.isEmpty()) {
+                predicates.add(root.get("category").get("id").in(categories));
+                log.debug("Added categories filter: {}", categories);
+            }
+            if (paid != null) {
+                predicates.add(cb.equal(root.get("paid"), paid));
+                log.debug("Added paid filter: {}", paid);
+            }
+            if (onlyAvailable != null && onlyAvailable) {
+                Predicate limitZero = cb.equal(root.get("participantLimit"), 0);
+                Predicate confirmedNotNull = cb.isNotNull(root.get("confirmedRequests"));
+                Predicate limitNotNull = cb.isNotNull(root.get("participantLimit"));
+                Predicate lessThan = cb.lessThan(root.get("confirmedRequests"), root.get("participantLimit"));
+                predicates.add(cb.or(limitZero, cb.and(confirmedNotNull, limitNotNull, lessThan)));
+                log.debug("Added onlyAvailable filter");
             }
             return cb.and(predicates.toArray(new Predicate[0]));
         };
 
         Pageable pageable = PageRequest.of(from / size, size);
-        List<Event> events;
-        try {
-            events = eventRepository.findAll(spec, pageable).getContent();
-            log.debug("Found {} events", events.size());
-        } catch (Exception e) {
-            log.error("Error executing query", e);
-            throw new RuntimeException("Error executing query", e);
-        }
+        List<Event> events = eventRepository.findAll(spec, pageable).getContent();
+        log.debug("Found {} events", events.size());
 
         try {
             updateViews(events);
