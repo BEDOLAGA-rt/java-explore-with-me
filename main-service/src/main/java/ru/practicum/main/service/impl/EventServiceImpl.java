@@ -309,7 +309,6 @@ public class EventServiceImpl implements EventService {
             throw new BadRequestException("Start date must be before end date");
         }
 
-        // Логируем запрос для диагностики
         log.info("Public events request: text='{}', categories={}, paid={}, rangeStart={}, rangeEnd={}, onlyAvailable={}, sort={}, from={}, size={}",
                 text != null ? text.substring(0, Math.min(text.length(), 50)) : null,
                 categories, paid, rangeStart, rangeEnd, onlyAvailable, sort, from, size);
@@ -324,7 +323,6 @@ public class EventServiceImpl implements EventService {
         final LocalDateTime start = rangeStart != null ? rangeStart : LocalDateTime.now();
         final LocalDateTime end = rangeEnd != null ? rangeEnd : LocalDateTime.now().plusYears(100);
 
-        // Построение спецификации
         Specification<Event> spec = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
             predicates.add(cb.greaterThanOrEqualTo(root.get("eventDate"), start));
@@ -332,7 +330,7 @@ public class EventServiceImpl implements EventService {
             predicates.add(cb.equal(root.get("state"), State.PUBLISHED));
 
             if (text != null && !text.isBlank()) {
-                // Для очень длинного текста используем только первые 200 символов для поиска
+                // Для очень длинного текста используем первые 200 символов для поиска
                 String searchText = text.length() > 200 ? text.substring(0, 200) : text;
                 String pattern = "%" + searchText.toLowerCase() + "%";
                 Predicate annotationLike = cb.like(cb.lower(root.get("annotation")), pattern);
@@ -358,42 +356,34 @@ public class EventServiceImpl implements EventService {
             return cb.and(predicates.toArray(new Predicate[0]));
         };
 
+        Pageable pageable = PageRequest.of(from / size, size);
+        List<Event> events = eventRepository.findAll(spec, pageable).getContent();
+
         try {
-            Pageable pageable = PageRequest.of(from / size, size);
-            List<Event> events = eventRepository.findAll(spec, pageable).getContent();
-
-            // Обновляем просмотры, игнорируем ошибки
-            try {
-                updateViews(events);
-            } catch (Exception e) {
-                log.error("Failed to update views for events", e);
-            }
-
-            if (sort != null) {
-                if (sort.equals("EVENT_DATE")) {
-                    events.sort(Comparator.comparing(Event::getEventDate));
-                } else if (sort.equals("VIEWS")) {
-                    events.sort(Comparator.comparing(Event::getViews).reversed());
-                }
-            }
-
-            return events.stream()
-                    .map(event -> {
-                        try {
-                            return EventMapper.toEventShortDto(event);
-                        } catch (Exception e) {
-                            log.error("Error mapping event to short dto: {}", event.getId(), e);
-                            return null;
-                        }
-                    })
-                    .filter(dto -> dto != null)
-                    .collect(Collectors.toList());
-
+            updateViews(events);
         } catch (Exception e) {
-            log.error("CRITICAL ERROR in getPublicEvents: ", e);
-            // Пробрасываем с понятным сообщением, чтобы глобальный обработчик вернул 500 с деталями
-            throw new RuntimeException("Failed to fetch public events: " + e.getMessage(), e);
+            log.error("Failed to update views for events", e);
         }
+
+        if (sort != null) {
+            if (sort.equals("EVENT_DATE")) {
+                events.sort(Comparator.comparing(Event::getEventDate));
+            } else if (sort.equals("VIEWS")) {
+                events.sort(Comparator.comparing(Event::getViews).reversed());
+            }
+        }
+
+        return events.stream()
+                .map(event -> {
+                    try {
+                        return EventMapper.toEventShortDto(event);
+                    } catch (Exception e) {
+                        log.error("Error mapping event to short dto: {}", event.getId(), e);
+                        return null;
+                    }
+                })
+                .filter(dto -> dto != null)
+                .collect(Collectors.toList());
     }
 
     @Override
