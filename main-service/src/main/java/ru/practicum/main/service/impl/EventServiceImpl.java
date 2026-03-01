@@ -157,15 +157,9 @@ public class EventServiceImpl implements EventService {
             event.setTitle(dto.getTitle());
         }
 
+        // Обработка stateAction с использованием enum
         if (dto.getStateAction() != null) {
-            String actionStr = dto.getStateAction();
-            StateActionUser action;
-            try {
-                action = StateActionUser.valueOf(actionStr);
-            } catch (IllegalArgumentException e) {
-                throw new BadRequestException("Unknown state action: " + actionStr);
-            }
-
+            StateActionUser action = dto.getStateAction();
             if (action == StateActionUser.SEND_TO_REVIEW) {
                 event.setState(State.PENDING);
             } else if (action == StateActionUser.CANCEL_REVIEW) {
@@ -261,15 +255,9 @@ public class EventServiceImpl implements EventService {
             event.setTitle(dto.getTitle());
         }
 
+        // Обработка stateAction с использованием enum
         if (dto.getStateAction() != null) {
-            String actionStr = dto.getStateAction();
-            StateActionAdmin action;
-            try {
-                action = StateActionAdmin.valueOf(actionStr);
-            } catch (IllegalArgumentException e) {
-                throw new BadRequestException("Unknown state action: " + actionStr);
-            }
-
+            StateActionAdmin action = dto.getStateAction();
             if (action == StateActionAdmin.PUBLISH_EVENT) {
                 if (event.getState() != State.PENDING) {
                     throw new ConflictException("Cannot publish the event because it's not in the right state: " + event.getState());

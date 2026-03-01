@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import jakarta.validation.constraints.PositiveOrZero;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
+import ru.practicum.main.model.enums.StateActionUser;
 
 import java.time.LocalDateTime;
 
@@ -29,7 +30,7 @@ public class UpdateEventUserRequest {
 
     private Boolean requestModeration;
 
-    private String stateAction; // SEND_TO_REVIEW, CANCEL_REVIEW
+    private StateActionUser stateAction; // изменено с String на enum
 
     @Size(min = 3, max = 120)
     private String title;
