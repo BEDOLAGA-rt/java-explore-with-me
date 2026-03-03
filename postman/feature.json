@@ -94,7 +94,7 @@
             "url": "{{baseUrl}}/users/{{userId}}/events",
             "body": {
               "mode": "raw",
-              "raw": "{\"annotation\":\"Test annotation for comment\",\"category\":{{catId}},\"description\":\"Test description for comment event\",\"eventDate\":\"2025-12-31 15:00:00\",\"location\":{\"lat\":55.75,\"lon\":37.62},\"paid\":false,\"participantLimit\":10,\"requestModeration\":true,\"title\":\"Comment test event\"}"
+              "raw": "{\"annotation\":\"Test annotation for comment\",\"category\":{{catId}},\"description\":\"Test description for comment event\",\"eventDate\":\"2026-12-31 15:00:00\",\"location\":{\"lat\":55.75,\"lon\":37.62},\"paid\":false,\"participantLimit\":10,\"requestModeration\":true,\"title\":\"Comment test event\"}"
             }
           }
         },
