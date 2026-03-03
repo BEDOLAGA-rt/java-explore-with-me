@@ -8,6 +8,8 @@ import ru.practicum.main.model.Event;
 import ru.practicum.main.model.User;
 
 public interface CommentRepository extends JpaRepository<Comment, Long> {
+
     Page<Comment> findAllByEvent(Event event, Pageable pageable);
+
     Page<Comment> findAllByAuthor(User author, Pageable pageable);
 }
