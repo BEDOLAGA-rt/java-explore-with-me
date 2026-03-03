@@ -322,6 +322,36 @@
           }
         },
         {
+          "name": "Создать комментарий для административного удаления",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test(\"Status 201\", function() {",
+                  "    pm.response.to.have.status(201);",
+                  "});",
+                  "pm.environment.set(\"adminCommentId\", pm.response.json().id);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/users/{{userId}}/comments?eventId={{eventId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\"text\":\"Comment for admin deletion.\"}"
+            }
+          }
+        },
+        {
           "name": "Административное удаление комментария",
           "event": [
             {
@@ -337,7 +367,7 @@
           ],
           "request": {
             "method": "DELETE",
-            "url": "{{baseUrl}}/admin/comments/{{commentId}}"
+            "url": "{{baseUrl}}/admin/comments/{{adminCommentId}}"
           }
         }
       ]
