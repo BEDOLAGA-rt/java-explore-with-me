@@ -28,7 +28,7 @@ public class Event {
     private Category category;
 
     @Column(name = "confirmed_requests")
-    private Long confirmedRequests; // можно подсчитывать динамически, но для упрощения храним
+    private Long confirmedRequests;
 
     @Column(name = "created_on", nullable = false)
     private LocalDateTime createdOn;
@@ -66,9 +66,9 @@ public class Event {
     private String title;
 
     @Column(name = "views")
-    private Long views; // можно обновлять через статистику
+    private Long views;
 
-    // Обратная связь для запросов (не обязательно, но удобно)
     @OneToMany(mappedBy = "event", cascade = CascadeType.REMOVE)
+    @Builder.Default
     private List<Request> requests = new ArrayList<>();
 }
